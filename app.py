@@ -5,10 +5,12 @@ import ta
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
+from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional
 import streamlit as st
 from keras.callbacks import EarlyStopping
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.decomposition import PCA
+from sklearn.model_selection import TimeSeriesSplit
 import os
 
 # Define technical indicators
@@ -102,13 +104,19 @@ else:
                 X_seq, Y_seq = np.array(X_seq), np.array(Y_seq)
 
                 # Split the data into training and testing sets
-                X_train, X_test, Y_train, Y_test = train_test_split(X_seq, Y_seq, test_size=0.2, random_state=42)
+                # X_train, X_test, Y_train, Y_test = train_test_split(X_seq, Y_seq, test_size=0.2, random_state=42)
+                
+                # TimeSeriesSplit for train-test split
+                tscv = TimeSeriesSplit(n_splits=10)
+                for train_index, test_index in tscv.split(X_seq):
+                X_train, X_test = X_seq[train_index], X_seq[test_index]
+                Y_train, Y_test = Y_seq[train_index], Y_seq[test_index]
 
                 # Define the LSTM model
                 model = Sequential()
                 model.add(LSTM(units=100, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])))
                 model.add(Dropout(0.2))
-                model.add(LSTM(units=100, return_sequences=False))
+                model.add(LSTM(units=50, return_sequences=False))
                 model.add(Dropout(0.2))
                 model.add(Dense(units=1))  # Predicting the 'Close' price
 
@@ -117,10 +125,10 @@ else:
 
                 # Train the model
                 early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-                history = model.fit(X_train, Y_train, epochs=100, batch_size=16, validation_data=(X_test, Y_test), verbose=0, callbacks=[early_stopping])
+                history = model.fit(X_train, Y_train, epochs=100, batch_size=32, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
 
                 # Evaluate the model
-                loss = model.evaluate(X_test, Y_test, verbose=0)
+                loss = model.evaluate(X_test, Y_test, verbose=1)
                 st.write(f'Test Loss: {loss}')
 
                 # Make predictions
@@ -143,6 +151,16 @@ else:
                 st.write(f"MAE: {mae}")
                 st.write(f"R2 Score: {r2}")
 
+                # Define a threshold for a prediction to be considered 'true'
+                threshold = 0.02  # for example, 2%
+                # Calculate the absolute percent error for each prediction
+                errors = np.abs((Y_pred - Y_actual) / Y_actual)
+                # Count the number of 'true' predictions
+                num_true_predictions = np.sum(errors < threshold)
+                # Calculate the accuracy
+                accuracy = num_true_predictions / len(Y_pred)
+                st.write(f'Accuracy based on threshold: {accuracy}')
+                    
                 # Predict the stock price
                 future_data = data[selected_indicators].values[-lookback:]
                 future_data_scaled = scaler_X.transform(future_data)  # Correctly reshape future_data
