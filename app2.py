@@ -9,6 +9,12 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from imblearn.over_sampling import SMOTE
+import xgboost as xgb
+import os
+import yfinance as yf
+import ta
 
 # Enhanced debugging
 st.write("Starting the Streamlit app")
