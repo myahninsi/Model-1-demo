@@ -10,9 +10,13 @@ from sklearn.svm import SVC
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from sklearn.preprocessing import StandardScaler
 
+# Enhanced debugging
+st.write("Starting the Streamlit app")
+
 # Attempt to import imblearn, handle the error if the package is missing
 try:
     from imblearn.over_sampling import SMOTE
+    st.write("Successfully imported SMOTE from imbalanced-learn")
 except ImportError as e:
     st.error("The imbalanced-learn library is not installed. Please install it by running `pip install imbalanced-learn`.")
     raise e
@@ -20,6 +24,7 @@ except ImportError as e:
 # Attempt to import xgboost, handle the error if the package is missing
 try:
     import xgboost as xgb
+    st.write("Successfully imported xgboost")
 except ImportError as e:
     st.error("The xgboost library is not installed. Please install it by running `pip install xgboost`.")
     raise e
