@@ -109,8 +109,8 @@ else:
                 # TimeSeriesSplit for train-test split
                 tscv = TimeSeriesSplit(n_splits=10)
                 for train_index, test_index in tscv.split(X_seq):
-                X_train, X_test = X_seq[train_index], X_seq[test_index]
-                Y_train, Y_test = Y_seq[train_index], Y_seq[test_index]
+                    X_train, X_test = X_seq[train_index], X_seq[test_index]
+                    Y_train, Y_test = Y_seq[train_index], Y_seq[test_index]
 
                 # Define the LSTM model
                 model = Sequential()
