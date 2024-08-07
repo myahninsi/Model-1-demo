@@ -123,6 +123,11 @@ else:
                         st.error("NaN values detected in training data. Please ensure there are no missing values.")
                         break
 
+                    # Ensure there are enough samples for SMOTE
+                    if len(np.unique(y_train)) < 2:
+                        st.warning(f"Not enough samples to apply SMOTE for class {np.unique(y_train)}")
+                        continue
+
                     # Oversample the minority classes (0 and 1) in the training set
                     smote = SMOTE(random_state=42)
                     X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
