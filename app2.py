@@ -9,10 +9,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from sklearn.preprocessing import StandardScaler
-import xgboost as xgb
-import os
-import yfinance as yf
-import ta
 
 # Attempt to import imblearn, handle the error if the package is missing
 try:
@@ -20,6 +16,17 @@ try:
 except ImportError as e:
     st.error("The imbalanced-learn library is not installed. Please install it by running `pip install imbalanced-learn`.")
     raise e
+
+# Attempt to import xgboost, handle the error if the package is missing
+try:
+    import xgboost as xgb
+except ImportError as e:
+    st.error("The xgboost library is not installed. Please install it by running `pip install xgboost`.")
+    raise e
+
+import os
+import yfinance as yf
+import ta
 
 # Load company data
 company_data_path = r"/mnt/data/final_v2.csv"  # Adjust the path as needed
