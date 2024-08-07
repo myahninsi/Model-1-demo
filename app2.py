@@ -16,8 +16,11 @@ import os
 import yfinance as yf
 import ta
 
+# Enhanced debugging
+st.write("Starting the Streamlit app")
+
 # Load company data
-company_data_path = r"final_v2.csv"  # Adjust the path as needed
+company_data_path = "final_v2.csv"  # Adjust the path as needed
 
 if not os.path.exists(company_data_path):
     st.error(f"The file {company_data_path} does not exist. Please ensure the file is uploaded correctly.")
@@ -114,6 +117,11 @@ else:
                 for train_index, test_index in tscv.split(X_scaled):
                     X_train, X_test = X_scaled[train_index], X_scaled[test_index]
                     y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+                    # Check for NaN values and handle them
+                    if np.any(np.isnan(X_train)) or np.any(np.isnan(y_train)):
+                        st.error("NaN values detected in training data. Please ensure there are no missing values.")
+                        break
 
                     # Oversample the minority classes (0 and 1) in the training set
                     smote = SMOTE(random_state=42)
