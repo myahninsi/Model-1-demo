@@ -7,3 +7,6 @@ seaborn
 yfinance
 tensorflow
 ta
+imbalanced-learn
+xgboost
+
