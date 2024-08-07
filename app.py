@@ -25,7 +25,7 @@ def add_technical_indicators(df):
 st.title("Stock Price Prediction")
 
 # Load company data
-company_data_path = r"C:\Users\Home\Downloads\Lambton\MHS\2nd Term\AI\Group Project\Demo\AI demo code\final_v2.csv"
+company_data_path = r"final_v2.csv"
 company_data = pd.read_csv(company_data_path)
 
 # Allow users to select sector and then company
