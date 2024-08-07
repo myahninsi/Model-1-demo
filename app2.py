@@ -16,29 +16,6 @@ import os
 import yfinance as yf
 import ta
 
-# Enhanced debugging
-st.write("Starting the Streamlit app")
-
-# Attempt to import imblearn, handle the error if the package is missing
-try:
-    from imblearn.over_sampling import SMOTE
-    st.write("Successfully imported SMOTE from imbalanced-learn")
-except ImportError as e:
-    st.error("The imbalanced-learn library is not installed. Please install it by running `pip install imbalanced-learn`.")
-    raise e
-
-# Attempt to import xgboost, handle the error if the package is missing
-try:
-    import xgboost as xgb
-    st.write("Successfully imported xgboost")
-except ImportError as e:
-    st.error("The xgboost library is not installed. Please install it by running `pip install xgboost`.")
-    raise e
-
-import os
-import yfinance as yf
-import ta
-
 # Load company data
 company_data_path = r"final_v2.csv"  # Adjust the path as needed
 
