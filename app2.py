@@ -9,14 +9,20 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from sklearn.preprocessing import StandardScaler
-from imblearn.over_sampling import SMOTE
 import xgboost as xgb
 import os
 import yfinance as yf
 import ta
 
+# Attempt to import imblearn, handle the error if the package is missing
+try:
+    from imblearn.over_sampling import SMOTE
+except ImportError as e:
+    st.error("The imbalanced-learn library is not installed. Please install it by running `pip install imbalanced-learn`.")
+    raise e
+
 # Load company data
-company_data_path = r"final_v2.csv"  # Use relative path
+company_data_path = r"/mnt/data/final_v2.csv"  # Adjust the path as needed
 
 if not os.path.exists(company_data_path):
     st.error(f"The file {company_data_path} does not exist. Please ensure the file is uploaded correctly.")
