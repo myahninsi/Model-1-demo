@@ -9,4 +9,5 @@ tensorflow
 ta
 imbalanced-learn
 xgboost
+keras
 
