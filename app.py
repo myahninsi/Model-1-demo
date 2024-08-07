@@ -117,14 +117,14 @@ else:
 
                 # Train the model
                 early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-                history = model.fit(X_train, Y_train, epochs=100, batch_size=16, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
+                history = model.fit(X_train, Y_train, epochs=100, batch_size=16, validation_data=(X_test, Y_test), verbose=0, callbacks=[early_stopping])
 
                 # Evaluate the model
-                loss = model.evaluate(X_test, Y_test, verbose=1)
+                loss = model.evaluate(X_test, Y_test, verbose=0)
                 st.write(f'Test Loss: {loss}')
 
                 # Make predictions
-                Y_pred_scaled = model.predict(X_test)
+                Y_pred_scaled = model.predict(X_test, verbose=0)
 
                 # Inverse transform the predictions and actual values
                 Y_pred = scaler_Y.inverse_transform(Y_pred_scaled)
@@ -147,7 +147,7 @@ else:
                 future_data = data[selected_indicators].values[-lookback:]
                 future_data_scaled = scaler_X.transform(future_data)  # Correctly reshape future_data
                 future_data_seq = future_data_scaled.reshape(1, lookback, len(selected_indicators))
-                prediction_scaled = model.predict(future_data_seq)
+                prediction_scaled = model.predict(future_data_seq, verbose=0)
                 prediction = scaler_Y.inverse_transform(prediction_scaled)
 
                 st.write("### Predicted Stock Price")
