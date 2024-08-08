@@ -88,58 +88,62 @@ else:
 
                 X_seq, Y_seq = np.array(X_seq), np.array(Y_seq)
 
-                # TimeSeriesSplit for train-test split
-                tscv = TimeSeriesSplit(n_splits=2)
-                for train_index, test_index in tscv.split(X_seq):
-                    X_train, X_test = X_seq[train_index], X_seq[test_index]
-                    Y_train, Y_test = Y_seq[train_index], Y_seq[test_index]
+                # Ensure we have enough data to split
+                if len(X_seq) < 2:
+                    st.error("Not enough data available for splitting into train and test sets.")
+                else:
+                    # TimeSeriesSplit for train-test split
+                    tscv = TimeSeriesSplit(n_splits=2)
+                    for train_index, test_index in tscv.split(X_seq):
+                        X_train, X_test = X_seq[train_index], X_seq[test_index]
+                        Y_train, Y_test = Y_seq[train_index], Y_seq[test_index]
 
-                # Define the LSTM model
-                model = Sequential()
-                model.add(LSTM(units=100, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])))
-                model.add(Dropout(0.2))
-                model.add(LSTM(units=50, return_sequences=False))
-                model.add(Dropout(0.2))
-                model.add(Dense(units=1))  # Predicting the 'Close' price
+                    # Define the LSTM model
+                    model = Sequential()
+                    model.add(LSTM(units=100, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])))
+                    model.add(Dropout(0.2))
+                    model.add(LSTM(units=50, return_sequences=False))
+                    model.add(Dropout(0.2))
+                    model.add(Dense(units=1))  # Predicting the 'Close' price
 
-                # Compile the model
-                model.compile(optimizer='adam', loss='mean_squared_error')
+                    # Compile the model
+                    model.compile(optimizer='adam', loss='mean_squared_error')
 
-                # Train the model
-                early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-                history = model.fit(X_train, Y_train, epochs=50, batch_size=16, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
+                    # Train the model
+                    early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+                    history = model.fit(X_train, Y_train, epochs=50, batch_size=16, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
 
-                # Generate predictions for the next 30 days
-                future_predictions = []
-                last_sequence = X_scaled[-lookback:]
+                    # Generate predictions for the next 30 days
+                    future_predictions = []
+                    last_sequence = X_scaled[-lookback:]
 
-                for _ in range(30):
-                    # Make prediction
-                    next_prediction_scaled = model.predict(last_sequence.reshape(1, lookback, -1))
-                    next_prediction = scaler_Y.inverse_transform(next_prediction_scaled)
-                    future_predictions.append(next_prediction[0][0])
+                    for _ in range(30):
+                        # Make prediction
+                        next_prediction_scaled = model.predict(last_sequence.reshape(1, lookback, -1))
+                        next_prediction = scaler_Y.inverse_transform(next_prediction_scaled)
+                        future_predictions.append(next_prediction[0][0])
 
-                    # Update the sequence by appending the prediction and removing the oldest entry
-                    next_prediction_features = np.append(last_sequence[-1, :-1], next_prediction_scaled).reshape(1, -1)
-                    last_sequence = np.append(last_sequence[1:], next_prediction_features, axis=0)
+                        # Update the sequence by appending the prediction and removing the oldest entry
+                        next_prediction_features = np.append(last_sequence[-1, :-1], next_prediction_scaled).reshape(1, -1)
+                        last_sequence = np.append(last_sequence[1:], next_prediction_features, axis=0)
 
-                # Prepare dates for plotting future predictions
-                last_date = pd.to_datetime(ndx_data['Date'].iloc[-1])
-                future_dates = [last_date + pd.DateOffset(days=i) for i in range(1, 31)]
+                    # Prepare dates for plotting future predictions
+                    last_date = pd.to_datetime(ndx_data['Date'].iloc[-1])
+                    future_dates = [last_date + pd.DateOffset(days=i) for i in range(1, 31)]
 
-                # Display next 30 days prices with dates
-                st.write("### Next 30 Days Stock Price Predictions")
-                for date, price in zip(future_dates, future_predictions):
-                    st.write(f'Date: {date}, Predicted Close Price: {price}')
+                    # Display next 30 days prices with dates
+                    st.write("### Next 30 Days Stock Price Predictions")
+                    for date, price in zip(future_dates, future_predictions):
+                        st.write(f'Date: {date}, Predicted Close Price: {price}')
 
-                # Plot future predictions
-                plt.figure(figsize=(12, 6))
-                plt.plot(future_dates, future_predictions, marker='o', linestyle='-', color='b')
-                plt.xlabel('Date')
-                plt.ylabel('Predicted Stock Price')
-                plt.title(f'Next {prediction_window} Days Stock Price Prediction')
-                plt.grid()
-                plt.xticks(rotation=45)
-                st.pyplot(plt)
+                    # Plot future predictions
+                    plt.figure(figsize=(12, 6))
+                    plt.plot(future_dates, future_predictions, marker='o', linestyle='-', color='b')
+                    plt.xlabel('Date')
+                    plt.ylabel('Predicted Stock Price')
+                    plt.title(f'Next {prediction_window} Days Stock Price Prediction')
+                    plt.grid()
+                    plt.xticks(rotation=45)
+                    st.pyplot(plt)
         else:
             st.error("No data available for the selected ticker.")
