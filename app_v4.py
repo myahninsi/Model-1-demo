@@ -144,12 +144,12 @@ else:
                 last_date = pd.to_datetime(data['Date'].iloc[-1])
                 future_dates = [last_date + pd.DateOffset(days=i) for i in range(1, 31)]
 
-                # Print next 30 days prices with dates
+                # Display next 30 days prices with dates
+                st.write("### Next 30 Days Stock Price Predictions")
                 for date, price in zip(future_dates, future_predictions):
                     st.write(f'Date: {date}, Predicted Close Price: {price}')
 
                 # Plot future predictions
-                st.write("### Next 30 Days Stock Price Predictions")
                 plt.figure(figsize=(12, 6))
                 plt.plot(future_dates, future_predictions, marker='o', linestyle='-', color='b')
                 plt.xlabel('Date')
