@@ -22,7 +22,7 @@ def add_technical_indicators(df):
     df['MACD_Hist'] = macd.macd_diff()
     return df
 
-# title of the app
+# Title of the app
 st.title("Stock Price Prediction")
 
 # Load company data
@@ -38,9 +38,9 @@ else:
     company_data.dropna(subset=['Sector', 'Company'], inplace=True)
     company_data = company_data.drop_duplicates(subset=['Company'])
 
-    # Allow users to select sector and then company
+    # Allow users to select sector and then company (show distinct values)
     sector = st.selectbox("Select Sector", company_data['Sector'].unique())
-    companies_in_sector = company_data[company_data['Sector'] == sector]['Company']
+    companies_in_sector = company_data[company_data['Sector'] == sector]['Company'].unique()
     ticker = st.selectbox("Select Company", companies_in_sector)
 
     # Select prediction window input
