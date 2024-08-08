@@ -22,7 +22,7 @@ def add_technical_indicators(df):
     df['MACD_Hist'] = macd.macd_diff()
     return df
 
-# Title of the app
+# title of the app
 st.title("Stock Price Prediction")
 
 # Load company data
@@ -49,15 +49,13 @@ else:
     # Select lookback period input
     lookback = st.number_input("Enter the lookback period:", min_value=1, max_value=100, value=60)
 
-    # Select start date for prediction
-    start_date = st.date_input("Select the start date for prediction")
-
     # Select technical indicators input
     technical_indicators = ['EMA_50', 'EMA_200', 'RSI', 'MACD', 'MACD_Signal', 'MACD_Hist']
     selected_indicators = st.multiselect("Select technical indicators to include:", technical_indicators, default=technical_indicators)
 
     if st.button('Predict'):
         # Load the dataset from yfinance
+        @st.cache_data
         def load_data(ticker):
             try:
                 data = yf.download(ticker, period='5y', progress=False)
@@ -71,9 +69,6 @@ else:
         data = load_data(ticker)
 
         if not data.empty:
-            # Filter data based on start date
-            data = data[data['Date'] >= pd.to_datetime(start_date)]
-
             # Check if data is loaded correctly
             st.write(f"Data loaded for ticker {ticker}:")
             st.write(data.head())
