@@ -3,14 +3,12 @@ import pandas as pd
 import yfinance as yf
 import ta
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import TimeSeriesSplit
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional
+from tensorflow.keras.layers import LSTM, Dense, Dropout
 import streamlit as st
 from keras.callbacks import EarlyStopping
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-from sklearn.decomposition import PCA
-from sklearn.model_selection import TimeSeriesSplit
 import os
 
 # Define technical indicators
@@ -35,6 +33,10 @@ if not os.path.exists(company_data_path):
     st.error(f"The file {company_data_path} does not exist. Please ensure the file is uploaded correctly.")
 else:
     company_data = pd.read_csv(company_data_path)
+
+    # Remove duplicates and NaN values
+    company_data.dropna(subset=['Sector', 'Company'], inplace=True)
+    company_data = company_data.drop_duplicates(subset=['Company'])
 
     # Allow users to select sector and then company
     sector = st.selectbox("Select Sector", company_data['Sector'].unique())
@@ -76,12 +78,6 @@ else:
             X = data[features].values
             Y = data['Close'].values
 
-            # Debug statements to check feature selection
-            st.write("Selected features:")
-            st.write(features)
-            st.write("Shape of X:", X.shape)
-            st.write("Shape of Y:", Y.shape)
-
             # Normalize the dataset
             scaler_X = MinMaxScaler(feature_range=(0, 1))
             scaler_Y = MinMaxScaler(feature_range=(0, 1))
@@ -98,14 +94,11 @@ else:
                 Y_seq = []
 
                 for i in range(lookback, len(X_scaled)):
-                    X_seq.append(X_scaled[i-lookback:i])
+                    X_seq.append(X_scaled[i - lookback:i])
                     Y_seq.append(Y_scaled[i])
 
                 X_seq, Y_seq = np.array(X_seq), np.array(Y_seq)
 
-                # Split the data into training and testing sets
-                # X_train, X_test, Y_train, Y_test = train_test_split(X_seq, Y_seq, test_size=0.2, random_state=42)
-                
                 # TimeSeriesSplit for train-test split
                 tscv = TimeSeriesSplit(n_splits=10)
                 for train_index, test_index in tscv.split(X_seq):
@@ -127,10 +120,6 @@ else:
                 early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
                 history = model.fit(X_train, Y_train, epochs=100, batch_size=32, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
 
-                # Evaluate the model
-                loss = model.evaluate(X_test, Y_test, verbose=1)
-                st.write(f'Test Loss: {loss}')
-
                 # Make predictions
                 Y_pred_scaled = model.predict(X_test, verbose=0)
 
@@ -143,14 +132,14 @@ else:
                 rmse = np.sqrt(mse)
                 mae = mean_absolute_error(Y_actual, Y_pred)
                 r2 = r2_score(Y_actual, Y_pred)
-
+'''
                 # Display evaluation metrics in the app
                 st.write("### Evaluation Metrics")
                 st.write(f"MSE: {mse}")
                 st.write(f"RMSE: {rmse}")
                 st.write(f"MAE: {mae}")
                 st.write(f"R2 Score: {r2}")
-
+'''
                 # Define a threshold for a prediction to be considered 'true'
                 threshold = 0.02  # for example, 2%
                 # Calculate the absolute percent error for each prediction
@@ -158,9 +147,9 @@ else:
                 # Count the number of 'true' predictions
                 num_true_predictions = np.sum(errors < threshold)
                 # Calculate the accuracy
-                accuracy = num_true_predictions / len(Y_pred)
-                st.write(f'Accuracy based on threshold: {accuracy}')
-                    
+                accuracy = num_true_predictions / len(Y_pred) * 100
+                st.write(f'Accuracy based on threshold: {accuracy:.2f}%')
+
                 # Predict the stock price
                 future_data = data[selected_indicators].values[-lookback:]
                 future_data_scaled = scaler_X.transform(future_data)  # Correctly reshape future_data
