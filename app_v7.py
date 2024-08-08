@@ -73,24 +73,22 @@ else:
         if not data.empty:
             # Filter data based on start date
             data = data[data['Date'] >= pd.to_datetime(start_date)]
-
-            # Check if data is loaded correctly
             st.write(f"Data loaded for ticker {ticker}:")
             st.write(data.head())
 
-            # Prepare features based on selected indicators
-            features = selected_indicators
-            X = data[features].values
-            Y = data['Close'].values
-
-            # Normalize the dataset
-            scaler_X = MinMaxScaler(feature_range=(0, 1))
-            scaler_Y = MinMaxScaler(feature_range=(0, 1))
-
-            # Check if X is empty
-            if X.shape[0] == 0:
-                st.error("No data available for the selected features and lookback period.")
+            # Ensure enough data points are available for the lookback period
+            if len(data) < lookback:
+                st.error("Not enough data points available for the selected start date and lookback period.")
             else:
+                # Prepare features based on selected indicators
+                features = selected_indicators
+                X = data[features].values
+                Y = data['Close'].values
+
+                # Normalize the dataset
+                scaler_X = MinMaxScaler(feature_range=(0, 1))
+                scaler_Y = MinMaxScaler(feature_range=(0, 1))
+
                 X_scaled = scaler_X.fit_transform(X)
                 Y_scaled = scaler_Y.fit_transform(Y.reshape(-1, 1))
 
@@ -104,56 +102,52 @@ else:
 
                 X_seq, Y_seq = np.array(X_seq), np.array(Y_seq)
 
-                # Check if sequences have the correct shape
-                if X_seq.shape[0] == 0 or X_seq.shape[1] == 0:
-                    st.error("No data available for the selected features and lookback period.")
-                else:
-                    # Define the LSTM model
-                    model = Sequential()
-                    model.add(LSTM(units=100, return_sequences=True, input_shape=(X_seq.shape[1], X_seq.shape[2])))
-                    model.add(Dropout(0.2))
-                    model.add(LSTM(units=50, return_sequences=False))
-                    model.add(Dropout(0.2))
-                    model.add(Dense(units=1))  # Predicting the 'Close' price
+                # Define the LSTM model
+                model = Sequential()
+                model.add(LSTM(units=100, return_sequences=True, input_shape=(X_seq.shape[1], X_seq.shape[2])))
+                model.add(Dropout(0.2))
+                model.add(LSTM(units=50, return_sequences=False))
+                model.add(Dropout(0.2))
+                model.add(Dense(units=1))  # Predicting the 'Close' price
 
-                    # Compile the model
-                    model.compile(optimizer='adam', loss='mean_squared_error')
+                # Compile the model
+                model.compile(optimizer='adam', loss='mean_squared_error')
 
-                    # Train the model
-                    early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-                    history = model.fit(X_seq, Y_seq, epochs=50, batch_size=16, verbose=1, callbacks=[early_stopping])
+                # Train the model
+                early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+                history = model.fit(X_seq, Y_seq, epochs=50, batch_size=16, verbose=1, callbacks=[early_stopping])
 
-                    # Generate predictions for the next 30 days
-                    future_predictions = []
-                    last_sequence = X_scaled[-lookback:]
+                # Generate predictions for the next 30 days
+                future_predictions = []
+                last_sequence = X_scaled[-lookback:]
 
-                    for _ in range(30):
-                        # Make prediction
-                        next_prediction_scaled = model.predict(last_sequence.reshape(1, lookback, -1))
-                        next_prediction = scaler_Y.inverse_transform(next_prediction_scaled)
-                        future_predictions.append(next_prediction[0][0])
+                for _ in range(30):
+                    # Make prediction
+                    next_prediction_scaled = model.predict(last_sequence.reshape(1, lookback, -1))
+                    next_prediction = scaler_Y.inverse_transform(next_prediction_scaled)
+                    future_predictions.append(next_prediction[0][0])
 
-                        # Update the sequence by appending the prediction and removing the oldest entry
-                        next_prediction_features = np.append(last_sequence[-1, :-1], next_prediction_scaled).reshape(1, -1)
-                        last_sequence = np.append(last_sequence[1:], next_prediction_features, axis=0)
+                    # Update the sequence by appending the prediction and removing the oldest entry
+                    next_prediction_features = np.append(last_sequence[-1, :-1], next_prediction_scaled).reshape(1, -1)
+                    last_sequence = np.append(last_sequence[1:], next_prediction_features, axis=0)
 
-                    # Prepare dates for plotting future predictions
-                    last_date = pd.to_datetime(data['Date'].iloc[-1])
-                    future_dates = [last_date + pd.DateOffset(days=i) for i in range(1, 31)]
+                # Prepare dates for plotting future predictions
+                last_date = pd.to_datetime(data['Date'].iloc[-1])
+                future_dates = [last_date + pd.DateOffset(days=i) for i in range(1, 31)]
 
-                    # Display next 30 days prices with dates
-                    st.write("### Next 30 Days Stock Price Predictions")
-                    for date, price in zip(future_dates, future_predictions):
-                        st.write(f'Date: {date}, Predicted Close Price: {price}')
+                # Display next 30 days prices with dates
+                st.write("### Next 30 Days Stock Price Predictions")
+                for date, price in zip(future_dates, future_predictions):
+                    st.write(f'Date: {date}, Predicted Close Price: {price}')
 
-                    # Plot future predictions
-                    plt.figure(figsize=(12, 6))
-                    plt.plot(future_dates, future_predictions, marker='o', linestyle='-', color='b')
-                    plt.xlabel('Date')
-                    plt.ylabel('Predicted Stock Price')
-                    plt.title(f'Next {prediction_window} Days Stock Price Prediction')
-                    plt.grid()
-                    plt.xticks(rotation=45)
-                    st.pyplot(plt)
+                # Plot future predictions
+                plt.figure(figsize=(12, 6))
+                plt.plot(future_dates, future_predictions, marker='o', linestyle='-', color='b')
+                plt.xlabel('Date')
+                plt.ylabel('Predicted Stock Price')
+                plt.title(f'Next {prediction_window} Days Stock Price Prediction')
+                plt.grid()
+                plt.xticks(rotation=45)
+                st.pyplot(plt)
         else:
             st.error("No data available for the selected ticker.")
