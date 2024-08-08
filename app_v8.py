@@ -54,29 +54,18 @@ else:
     selected_indicators = st.multiselect("Select technical indicators to include:", technical_indicators, default=technical_indicators)
 
     if st.button('Predict'):
-        # Load the dataset from yfinance
-        @st.cache_data
-        def load_data(ticker):
-            try:
-                data = yf.download(ticker, period='5y', progress=False)
-                data.reset_index(inplace=True)
-                data = add_technical_indicators(data)
-                return data.dropna()
-            except Exception as e:
-                st.error(f"Error loading data for ticker {ticker}: {e}")
-                return pd.DataFrame()
+        # Filter data for the selected ticker
+        ndx_data = company_data[company_data['Company'] == ticker].copy()
 
-        data = load_data(ticker)
-
-        if not data.empty:
+        if not ndx_data.empty:
             # Check if data is loaded correctly
             st.write(f"Data loaded for ticker {ticker}:")
-            st.write(data.head())
+            st.write(ndx_data.head())
 
             # Prepare features based on selected indicators
             features = selected_indicators
-            X = data[features].values
-            Y = data['Close'].values
+            X = ndx_data[features].values
+            Y = ndx_data['Close'].values
 
             # Normalize the dataset
             scaler_X = MinMaxScaler(feature_range=(0, 1))
@@ -100,7 +89,7 @@ else:
                 X_seq, Y_seq = np.array(X_seq), np.array(Y_seq)
 
                 # TimeSeriesSplit for train-test split
-                tscv = TimeSeriesSplit(n_splits=10)
+                tscv = TimeSeriesSplit(n_splits=2)
                 for train_index, test_index in tscv.split(X_seq):
                     X_train, X_test = X_seq[train_index], X_seq[test_index]
                     Y_train, Y_test = Y_seq[train_index], Y_seq[test_index]
@@ -118,9 +107,9 @@ else:
 
                 # Train the model
                 early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-                history = model.fit(X_train, Y_train, epochs=100, batch_size=32, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
+                history = model.fit(X_train, Y_train, epochs=50, batch_size=16, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
 
-                # Make predictions for the next 30 days
+                # Generate predictions for the next 30 days
                 future_predictions = []
                 last_sequence = X_scaled[-lookback:]
 
@@ -135,7 +124,7 @@ else:
                     last_sequence = np.append(last_sequence[1:], next_prediction_features, axis=0)
 
                 # Prepare dates for plotting future predictions
-                last_date = pd.to_datetime(data['Date'].iloc[-1])
+                last_date = pd.to_datetime(ndx_data['Date'].iloc[-1])
                 future_dates = [last_date + pd.DateOffset(days=i) for i in range(1, 31)]
 
                 # Display next 30 days prices with dates
