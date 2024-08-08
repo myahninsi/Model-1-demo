@@ -126,28 +126,37 @@ else:
                 early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
                 history = model.fit(X_train, Y_train, epochs=50, batch_size=16, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
 
-                # Make predictions
+                # Generate predictions for the next 30 days
                 future_predictions = []
-                for i in range(prediction_window):
-                    future_data = data[selected_indicators].values[-lookback:]
-                    future_data_scaled = scaler_X.transform(future_data)  # Correctly reshape future_data
-                    future_data_seq = future_data_scaled.reshape(1, lookback, len(selected_indicators))
-                    prediction_scaled = model.predict(future_data_seq, verbose=0)
-                    prediction = scaler_Y.inverse_transform(prediction_scaled)
-                    future_predictions.append(prediction[0][0])
+                last_sequence = X_scaled[-lookback:]
 
-                    # Append the prediction to the data to use it for the next step prediction
-                    next_row = np.append(future_data_scaled[-1, 1:], prediction_scaled)
-                    data = data.append(pd.Series(next_row, index=data.columns), ignore_index=True)
+                for _ in range(30):
+                    # Make prediction
+                    next_prediction_scaled = model.predict(last_sequence.reshape(1, lookback, -1))
+                    next_prediction = scaler_Y.inverse_transform(next_prediction_scaled)
+                    future_predictions.append(next_prediction[0][0])
+
+                    # Update the sequence by appending the prediction and removing the oldest entry
+                    next_prediction_features = np.append(last_sequence[-1, :-1], next_prediction_scaled).reshape(1, -1)
+                    last_sequence = np.append(last_sequence[1:], next_prediction_features, axis=0)
+
+                # Prepare dates for plotting future predictions
+                last_date = pd.to_datetime(data['Date'].iloc[-1])
+                future_dates = [last_date + pd.DateOffset(days=i) for i in range(1, 31)]
+
+                # Print next 30 days prices with dates
+                for date, price in zip(future_dates, future_predictions):
+                    st.write(f'Date: {date}, Predicted Close Price: {price}')
 
                 # Plot future predictions
                 st.write("### Next 30 Days Stock Price Predictions")
                 plt.figure(figsize=(12, 6))
-                plt.plot(range(prediction_window), future_predictions, marker='o', linestyle='-', color='b')
-                plt.xlabel('Days')
+                plt.plot(future_dates, future_predictions, marker='o', linestyle='-', color='b')
+                plt.xlabel('Date')
                 plt.ylabel('Predicted Stock Price')
                 plt.title(f'Next {prediction_window} Days Stock Price Prediction')
                 plt.grid()
+                plt.xticks(rotation=45)
                 st.pyplot(plt)
         else:
             st.error("No data available for the selected ticker.")
