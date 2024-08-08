@@ -8,6 +8,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 import streamlit as st
 from keras.callbacks import EarlyStopping
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import os
 
 # Define technical indicators
