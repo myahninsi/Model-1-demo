@@ -9,7 +9,6 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 import streamlit as st
 from keras.callbacks import EarlyStopping
 import os
-import matplotlib.pyplot as plt
 
 # Define technical indicators
 def add_technical_indicators(df):
@@ -100,7 +99,7 @@ else:
                 X_seq, Y_seq = np.array(X_seq), np.array(Y_seq)
 
                 # TimeSeriesSplit for train-test split
-                tscv = TimeSeriesSplit(n_splits=2)
+                tscv = TimeSeriesSplit(n_splits=10)
                 for train_index, test_index in tscv.split(X_seq):
                     X_train, X_test = X_seq[train_index], X_seq[test_index]
                     Y_train, Y_test = Y_seq[train_index], Y_seq[test_index]
@@ -118,39 +117,23 @@ else:
 
                 # Train the model
                 early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-                history = model.fit(X_train, Y_train, epochs=50, batch_size=16, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
+                history = model.fit(X_train, Y_train, epochs=100, batch_size=32, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
 
-                # Generate predictions for the next 30 days
-                future_predictions = []
-                last_sequence = X_scaled[-lookback:]
+                # Make predictions
+                Y_pred_scaled = model.predict(X_test, verbose=0)
 
-                for _ in range(30):
-                    # Make prediction
-                    next_prediction_scaled = model.predict(last_sequence.reshape(1, lookback, -1))
-                    next_prediction = scaler_Y.inverse_transform(next_prediction_scaled)
-                    future_predictions.append(next_prediction[0][0])
+                # Inverse transform the predictions and actual values
+                Y_pred = scaler_Y.inverse_transform(Y_pred_scaled)
+                Y_actual = scaler_Y.inverse_transform(Y_test)
 
-                    # Update the sequence by appending the prediction and removing the oldest entry
-                    next_prediction_features = np.append(last_sequence[-1, :-1], next_prediction_scaled).reshape(1, -1)
-                    last_sequence = np.append(last_sequence[1:], next_prediction_features, axis=0)
+                # Predict the stock price
+                future_data = data[selected_indicators].values[-lookback:]
+                future_data_scaled = scaler_X.transform(future_data)  # Correctly reshape future_data
+                future_data_seq = future_data_scaled.reshape(1, lookback, len(selected_indicators))
+                prediction_scaled = model.predict(future_data_seq, verbose=0)
+                prediction = scaler_Y.inverse_transform(prediction_scaled)
 
-                # Prepare dates for plotting future predictions
-                last_date = pd.to_datetime(data['Date'].iloc[-1])
-                future_dates = [last_date + pd.DateOffset(days=i) for i in range(1, 31)]
-
-                # Display next 30 days prices with dates
-                st.write("### Next 30 Days Stock Price Predictions")
-                for date, price in zip(future_dates, future_predictions):
-                    st.write(f'Date: {date}, Predicted Close Price: {price}')
-
-                # Plot future predictions
-                plt.figure(figsize=(12, 6))
-                plt.plot(future_dates, future_predictions, marker='o', linestyle='-', color='b')
-                plt.xlabel('Date')
-                plt.ylabel('Predicted Stock Price')
-                plt.title(f'Next {prediction_window} Days Stock Price Prediction')
-                plt.grid()
-                plt.xticks(rotation=45)
-                st.pyplot(plt)
+                st.write("### Predicted Stock Price")
+                st.write(f"Predicted price for the next {prediction_window} days: {prediction[0][0]}")
         else:
             st.error("No data available for the selected ticker.")
