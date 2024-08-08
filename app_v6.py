@@ -133,12 +133,14 @@ else:
                 mae = mean_absolute_error(Y_actual, Y_pred)
                 r2 = r2_score(Y_actual, Y_pred)
 
+                '''
                 # Display evaluation metrics in the app
                 st.write("### Evaluation Metrics")
                 st.write(f"MSE: {mse}")
                 st.write(f"RMSE: {rmse}")
                 st.write(f"MAE: {mae}")
                 st.write(f"R2 Score: {r2}")
+                '''
 
                 # Define a threshold for a prediction to be considered 'true'
                 threshold = 0.02  # for example, 2%
