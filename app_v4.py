@@ -32,7 +32,9 @@ company_data_path = "final_v2.csv"  # Use relative path
 if not os.path.exists(company_data_path):
     st.error(f"The file {company_data_path} does not exist. Please ensure the file is uploaded correctly.")
 else:
+    st.write("Loading company data...")
     company_data = pd.read_csv(company_data_path)
+    st.write("Company data loaded.")
 
     # Remove duplicates and NaN values
     company_data.dropna(subset=['Sector', 'Company'], inplace=True)
@@ -58,12 +60,13 @@ else:
 
     if st.button('Predict'):
         # Load the dataset from yfinance
-        @st.cache_data
         def load_data(ticker):
             try:
+                st.write(f"Downloading data for {ticker}...")
                 data = yf.download(ticker, period='5y', progress=False)
                 data.reset_index(inplace=True)
                 data = add_technical_indicators(data)
+                st.write("Data downloaded and indicators added.")
                 return data.dropna()
             except Exception as e:
                 st.error(f"Error loading data for ticker {ticker}: {e}")
@@ -73,6 +76,7 @@ else:
 
         if not data.empty:
             # Filter data based on start date
+            st.write(f"Filtering data from {start_date}...")
             data = data[data['Date'] >= pd.to_datetime(start_date)]
 
             # Check if data is loaded correctly
@@ -92,6 +96,7 @@ else:
             if X.shape[0] == 0:
                 st.error("No data available for the selected features and lookback period.")
             else:
+                st.write("Scaling data...")
                 X_scaled = scaler_X.fit_transform(X)
                 Y_scaled = scaler_Y.fit_transform(Y.reshape(-1, 1))
 
@@ -111,6 +116,7 @@ else:
                     X_train, X_test = X_seq[train_index], X_seq[test_index]
                     Y_train, Y_test = Y_seq[train_index], Y_seq[test_index]
 
+                st.write("Training model...")
                 # Define the LSTM model
                 model = Sequential()
                 model.add(LSTM(units=100, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])))
@@ -127,6 +133,7 @@ else:
                 history = model.fit(X_train, Y_train, epochs=50, batch_size=16, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
 
                 # Generate predictions for the next 30 days
+                st.write("Generating predictions...")
                 future_predictions = []
                 last_sequence = X_scaled[-lookback:]
 
