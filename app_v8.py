@@ -72,7 +72,7 @@ else:
             scaler_Y = MinMaxScaler(feature_range=(0, 1))
 
             # Check if X is empty
-            if X.shape[0] == 0:
+            if X.shape[0] == 0 or len(X) < lookback:
                 st.error("No data available for the selected features and lookback period.")
             else:
                 X_scaled = scaler_X.fit_transform(X)
@@ -89,7 +89,7 @@ else:
                 X_seq, Y_seq = np.array(X_seq), np.array(Y_seq)
 
                 # Ensure we have enough data to split
-                if len(X_seq) < 2:
+                if len(X_seq) < 2 or len(X_seq) <= 2 * lookback:
                     st.error("Not enough data available for splitting into train and test sets.")
                 else:
                     # TimeSeriesSplit for train-test split
