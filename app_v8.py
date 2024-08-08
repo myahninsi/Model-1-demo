@@ -34,10 +34,6 @@ if not os.path.exists(company_data_path):
 else:
     company_data = pd.read_csv(company_data_path)
 
-    # Remove duplicates and NaN values
-    company_data.dropna(subset=['Sector', 'Company'], inplace=True)
-    company_data = company_data.drop_duplicates(subset=['Company'])
-
     # Allow users to select sector and then company (show distinct values)
     sector = st.selectbox("Select Sector", company_data['Sector'].unique())
     companies_in_sector = company_data[company_data['Sector'] == sector]['Company'].unique()
