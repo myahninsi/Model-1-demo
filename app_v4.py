@@ -127,6 +127,29 @@ else:
                 Y_pred = scaler_Y.inverse_transform(Y_pred_scaled)
                 Y_actual = scaler_Y.inverse_transform(Y_test)
 
+                # Calculate MSE and RMSE
+                mse = mean_squared_error(Y_actual, Y_pred)
+                rmse = np.sqrt(mse)
+                mae = mean_absolute_error(Y_actual, Y_pred)
+                r2 = r2_score(Y_actual, Y_pred)
+
+                # Display evaluation metrics in the app
+                st.write("### Evaluation Metrics")
+                st.write(f"MSE: {mse}")
+                st.write(f"RMSE: {rmse}")
+                st.write(f"MAE: {mae}")
+                st.write(f"R2 Score: {r2}")
+
+                # Define a threshold for a prediction to be considered 'true'
+                threshold = 0.02  # for example, 2%
+                # Calculate the absolute percent error for each prediction
+                errors = np.abs((Y_pred - Y_actual) / Y_actual)
+                # Count the number of 'true' predictions
+                num_true_predictions = np.sum(errors < threshold)
+                # Calculate the accuracy
+                accuracy = num_true_predictions / len(Y_pred) * 100
+                st.write(f'Accuracy based on threshold: {accuracy:.2f}%')
+
                 # Predict the stock price
                 future_data = data[selected_indicators].values[-lookback:]
                 future_data_scaled = scaler_X.transform(future_data)  # Correctly reshape future_data
