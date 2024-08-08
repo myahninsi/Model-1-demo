@@ -22,7 +22,7 @@ def add_technical_indicators(df):
     df['MACD_Hist'] = macd.macd_diff()
     return df
 
-# Title of the app
+# title of the app
 st.title("Stock Price Prediction")
 
 # Load company data
@@ -100,7 +100,7 @@ else:
                 X_seq, Y_seq = np.array(X_seq), np.array(Y_seq)
 
                 # TimeSeriesSplit for train-test split
-                tscv = TimeSeriesSplit(n_splits=2)
+                tscv = TimeSeriesSplit(n_splits=10)
                 for train_index, test_index in tscv.split(X_seq):
                     X_train, X_test = X_seq[train_index], X_seq[test_index]
                     Y_train, Y_test = Y_seq[train_index], Y_seq[test_index]
@@ -118,9 +118,9 @@ else:
 
                 # Train the model
                 early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-                history = model.fit(X_train, Y_train, epochs=50, batch_size=16, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
+                history = model.fit(X_train, Y_train, epochs=100, batch_size=32, validation_data=(X_test, Y_test), verbose=1, callbacks=[early_stopping])
 
-                # Generate predictions for the next 30 days
+                # Make predictions for the next 30 days
                 future_predictions = []
                 last_sequence = X_scaled[-lookback:]
 
